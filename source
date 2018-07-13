@@ -1,0 +1,283 @@
+#include<windows.h>
+#include <stdlib.h>
+#include<stdio.h>
+#include <gl/glut.h>
+#include <fstream>
+int gameover=0;
+void display();
+int main(int argc, char** argv);
+int again=0;
+#define VM_N 30
+#define VM_M 20
+#define VM_Scale 25
+
+#define VD_W VM_N * VM_Scale
+#define VD_H VM_M * VM_Scale
+int count=0, score=0;
+
+struct snk 
+{
+	int x;
+	int y;
+};
+void drawBitmapText(float x, float y, float z,char *string)
+{
+    char *c;
+    glRasterPos3f(x, y, z);
+    for (c = string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
+}
+
+
+int dir = 1, sh = 5;
+snk s[100];
+int step = 300;
+int MX, myMX;
+
+class fruct
+{
+	public:
+		int x, y;
+		void gen() 
+		{
+			x = rand() % VM_N;
+			y = rand() % VM_M;
+			
+			for(int i = 0; i < sh; i++)
+				if(s[i].x == x && s[i].y == y)
+					gen();
+		}
+		void draw() 
+		{
+			glColor3f(0, 1, 0);
+			glRecti(x * VM_Scale - 1, y * VM_Scale, (x + 1) * VM_Scale, (y + 1) * VM_Scale);
+		}
+};
+
+
+
+fruct fru;
+
+class game 
+{
+	public:
+		void over()
+		{
+			
+			exit(0);
+		}
+		
+		void drawSnake()
+		{
+			glColor3f(1, 0, 0);
+			glRecti(s[0].x * VM_Scale - 1, s[0].y * VM_Scale, (s[0].x + 1) * VM_Scale, (s[0].y + 1) * VM_Scale + 1);
+			
+			glColor3f(0, 0, 1);
+			for(int i = 1; i < sh; i++)
+				glRecti(s[i].x * VM_Scale - 1, s[i].y * VM_Scale, (s[i].x + 1) * VM_Scale, (s[i].y + 1) * VM_Scale + 1);
+		}
+
+		void stroke() 
+		{
+			for(int i = sh; i > 0; i--) 
+			{
+				s[i].x = s[i-1].x;
+				s[i].y = s[i-1].y;
+			}
+			
+			if(dir == 1)
+				s[0].y += 1;
+			if(dir == 2)
+				s[0].x += 1;
+			if(dir == 3)
+				s[0].y -= 1;
+			if(dir == 4)
+				s[0].x -= 1;
+			
+			
+			if(fru.x == s[0].x && fru.y == s[0].y) 
+			{
+				score++;
+				printf("score=%d\n",score);
+				sh++;
+				fru.gen();
+				
+				if(sh > MX)
+					myMX = sh;
+				
+				if(step > 1)
+					step -= step / 20;
+			}
+			
+			
+			if(s[0].x < 0 || s[0].x >= VM_N || s[0].y < 0 || s[0].y >= VM_M)
+			{
+					printf("GAME OVER\n");
+					gameover=1;
+					glutPostRedisplay();
+					
+					
+			}
+			for(int i = 1; i < sh; i++)
+				if(s[0].x == s[i].x && s[0].y == s[i].y)
+					sh = i+1;
+		}
+
+
+
+		static void keyboard(int key, int a, int b) 
+		{
+			switch(key) 
+			{
+				case 101:
+					if(dir != 3)
+						dir = 1;
+				break;
+				
+				case 102:
+					if(dir != 4)
+						dir = 2;
+				break;
+				
+				case 103:
+					if(dir != 1)
+						dir = 3;
+				break;
+				
+				case 100:
+					if(dir != 2)
+						dir = 4;
+				break;
+			}
+		}
+};
+game snake;
+
+
+
+
+
+void display() 
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	if(gameover==0)
+	{
+	snake.drawSnake();
+	fru.draw();
+	}
+	else
+	{
+		glFlush();
+		glColor3f(1,1,1);
+		drawBitmapText(320,250,0.0,"GAME OVER");	
+		glutPostRedisplay();
+		if(again==0)
+			again=1;
+		else
+		{
+			Sleep(5000);
+				snake.over();
+		}
+
+	}
+	glFlush();
+	glutSwapBuffers();
+}
+
+
+
+void timer(int = 0) 
+{
+	display();
+	snake.stroke();
+	glutTimerFunc(step, timer, 0);
+}
+
+void firstGameSetup()
+{
+	for(int i = 0; i < sh; i++) 
+	{
+		s[i].x = VM_N / 2;
+		s[i].y = (VM_M + sh) / 2 - i;
+	}
+	fru.gen();
+}
+
+void firstSetup() 
+{
+	glClearColor(0, 0, 0, 0);
+	glColor3f(1, 1, 1);
+}
+
+
+
+
+int main(int argc, char **argv) 
+{
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowSize(VD_W, VD_H);
+	glutInitWindowPosition(100, 100);
+	glutCreateWindow("XSnake 2D");
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0, VD_W, 0, VD_H);
+	firstSetup();
+	firstGameSetup();
+	glutSpecialFunc(game::keyboard);
+	glutDisplayFunc(display);
+	glutTimerFunc(step, timer, 0);
+	glutMainLoop();
+	return 0;
+}
+
+On Thu, May 24, 2018 at 11:15 PM Bhuvnesh Tenguria <bhuvneshtenguria123@gmail.com> wrote:
+
+
+On Thu, May 24, 2018 at 11:55 AM, Durgesh kumar <kumardurgesh96@gmail.com> wrote:
+sna.png
+
+
+#include<windows.h>
+#include <stdlib.h>
+#include<stdio.h>
+#include <gl/glut.h>
+#include <fstream>
+int gameover=0;
+void display();
+int main(int argc, char** argv);
+int again=0;
+#define VM_N 30
+#define VM_M 20
+#define VM_Scale 25
+
+#define VD_W VM_N * VM_Scale
+#define VD_H VM_M * VM_Scale
+int count=0, score=0;
+
+struct snk 
+{
+	int x;
+	int y;
+};
+void drawBitmapText(float x, float y, float z,char *string)
+{
+    char *c;
+    glRasterPos3f(x, y, z);
+    for (c = string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
+}
+
+
+int dir = 1, sh = 5;
+snk s[100];
+int step = 300;
+int MX, myMX;
+
+class fruct
+{
+<span style="white-space
